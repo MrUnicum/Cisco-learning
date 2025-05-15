@@ -1,0 +1,149 @@
+PPP:
+Példa feladat (5.):
+A két router közötti Serial kapcsolatban a 2-ik rétegbeli beágyazás PPP legyen! A
+hitelesítés:CHAP jelszó: cisco !
+
+PPP configurálás  (routerben):
+-username xyz password xyz
+-interface xyz-(serial0/0/0)
+-encapsulation ppp
+Ha kér hitelesitést: ppp authentication chap
+-ip add xyz mask  (10.20.30.1 255.255.255.252)
+
+
+2-3.a
+Vlanlétrehozás :
+-példa feladat   (sw1 – mlsw1)
+Hozzátok létre az L2-es VLAN-okat a topológia szerint. Először jegyzeteljetek egy
+szövegdobozban, elolvasva ezt a teljes feladatsort! A végfelhasználói csatlakozáshoz
+használt MLSW-ek is L2-ben dolgoznak.
+a. Az 1-10 portok a „kisebb” a 11-15 portok a „nagyobb” VLAN-hoz csatlakozzanak!
+Switch-ben és multilayer switchben egyaránt!
+3.a
+VLAN 10
+NAME KISEBB
+VLAN 20
+NAME NAGYOBB
+int range fa0/1-10
+switchport access vlan 10
+int range fa0/1-15
+switchport access vlan 20
+
+3-b-4
+Etherchannel LAC:
+3.b. A trönkportok csak a két VLAN-t engedjék át!
+4. A két végfelhasználói SW-ben alakítson ki ETHERCHANNELT LACP protokoll
+segítségével! A portchannelt is trönkölje!
+Mindig van egy active és egy passive oldal.
+
+INT range gig0/1-2
+sw mode trunk
+sw trunk allowed vlan 10,20
+channel-group 1 mode active / passive
+int port-channel 1
+sw mode trunk
+sw trunk allowed vlan10,20
+
+OSPF:
+8. Valósítson meg OSPF forgalomirányítást 10-es azonosítóval és 0-ás
+területazonosítóval
+d. passziválja a megfelelő interfészeket!
+e. Osszon ki router ID-ket! A SWITCH felé csatlakozó legyen a DR router!
+
+
+
+fel8 ospf:
+R1(config)#router ospf
+R1(config)#router ospf ?
+<1-65535> Process ID
+R1(config)#router ospf 10
+R1(config-router)#network 192.168.10.0 0.0.0.127 area 0
+R1(config-router)#network 192.168.20.0 0.0.0.63 area 0
+R1(config-router)#network 10.10.10.0 0.0.0.3 area 0
+R1(config-router)#network 172.16.16.0 0.0.0.3 area 0
+R1(config-router)#end
+
+
+9. DHCP kiszolgálás és DNS: (fel9:(dhcp)
+f. A kiszolgáló legyen a SWICH-hez csatlakozó router (az a router ami össze van kötve a swichel)
+g. Mindkét VLAN-t szolgálja ki!
+h. Alapértelmezett átjáró: a VLAN-ok virtuális IP-címe
+i. DNS-server: 8.8.8.8
+
+R1(config)#ip dhc
+R1(config)#ip dhcp excluded-address 192.168.10.1 192.168.10.11
+R1(config)#ip dhcp excluded-address 192.168.20.1 192.168.20.11
+R1(config)#ip dhcp pool kisebb
+R1(dhcp-config)#network 192.168.10.0 255.255.255.128
+R1(dhcp-config)#default-router 192.168.10.5
+R1(dhcp-config)#dns-server 8.8.8.8
+R1(dhcp-config)#ip dhcp pool nagyobb
+R1(dhcp-config)#network 192.168.20.0 255.255.255.192
+R1(dhcp-config)#default-router 192.168.20.5
+R1(dhcp-config)#dns-server 8.8.8.8
+R1(dhcp-config)#do wr
+
+
+
+
+
+
+
+
+
+HSRp
+fel10:  
+10. A két router helyettesítheti egymást:
+j. A SWITCH felé csatlakozó legyen az aktív. Gondoskodjon róla, hogy minden
+VLAN esetén működjön a helyettesítés! Az említett router egy esetleges kiesés
+esetén kérje vissza az elsődleges szerepét, ha újra működőképes lesz!
+k. Virtuális IP címnek az 5. IP-címet használja! 
+(110 vagy 120 a nagyobb az aktív a kisebb a pasive) Ha a 120 kiesik a 110 lép életbe.
+Egyik routerbe a 110, a másikba a 120 kerül.
+R2
+
+HSRP
+
+R2(config-router)#INT GIG0/0/1.10
+R2(config-subif)#STandby 10
+R2(config-subif)#STandby 10 ip 192.168.10.5
+R2(config-subif)#standby 10 prio
+R2(config-subif)#standby 10 priority 110
+R2(config-subif)#
+R2(config-subif)#ex
+R2(config)#int gig0/0/1.20
+R2(config-subif)#standby 20 ip 192.168.10.5
+% Address 192.168.10.5 in group 10
+R2(config-subif)#standby 20 prio
+R2(config-subif)#STandby 10 ip 192.168.20.5
+R2(config-subif)#standby 20 priority 110
+R2(config-subif)#do wr
+
+
+
+
+11. Portvédelem: 
+A trönk portokon kívül minden portra végezze el:
+a. két MAC address-t engedélyezzen, valamint további behatolás esetén
+regisztrálja, de ne kapcsolja le a portokat!
+Multilayer fel11:
+MLSW1(config)#INT RANG
+MLSW1(config)#INT RANGe GIG1/0/1-22
+MLSW1(config-if-range)#SWitchport PORT
+MLSW1(config-if-range)#SWitchport PORT-security 
+MLSW1(config-if-range)#SWitchport PORT-security MAXimum 2
+MLSW1(config-if-range)#SWitchport PORT
+MLSW1(config-if-range)#SWitchport PORT-security VIOlation REStrict 
+MLSW1(config-if-range)#
+
+
+
+
+04_DC_DNS.pdf
+Göcs László - igazságügyi informatikai szakértő, informatika tanár, mérnök informatikus, informatika biztonság
+
+Cisco_osszefoglaloSKSz
+
+GocsL_linux_konyv.pdf
+
+https://users.iit.uni-miskolc.hu/~szkovacs/OpNet/Cisco_osszefoglalo.pdf
